@@ -1,0 +1,18 @@
+{
+  "name": "webscrap",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer-core": "^2.1.1",
+    "sucrase": "^3.12.1",
+    "write-to-file": "^1.0.2"
+  },
+  "scripts": {
+    "start": "sucrase-node src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^12.12.31",
+    "@types/puppeteer-core": "^2.0.0"
+  }
+}
