@@ -1,33 +1,26 @@
-import pptr from 'puppeteer-core'
-import process from 'process'
-import { writeFile } from 'fs'
+import express from 'express'
+import ppr from 'puppeteer-core'
 
 import * as Siga from './controllers/Siga'
 
-const main = async () => {
-  const browser = await pptr.launch({
-    executablePath: 'C:\\Program Files\\chrome-win\\chrome.exe',
+const app = express()
+app.get('/notas', async (req, res) => {
+  const browser = await ppr.launch({
+    executablePath: 'C:\\Program Files\\Chromium\\chrome.exe',
   })
+  try {
+    const pg = await browser.newPage()
+    await pg.goto('https://www.siga.ufrpe.br/ufrpe/index.jsp')
 
-  const page = await browser.newPage()
-  await page.goto('https://www.siga.ufrpe.br/ufrpe/index.jsp')
+    await Siga.login(req.query.login, req.query.pass, pg)
 
-  await Siga.login(process.argv[2], process.argv[3], page)
+    const response = await Siga.extractNotas(browser)
+    await Siga.exit(pg)
+    return res.status(200).json(response)
+  } catch (err) {
+    await browser.close()
+    return res.status(400).json({ error: err })
+  }
+})
 
-  await page.waitForSelector('#Conteudo')
-
-  const notasDetalhadas = await Siga.extractNotas(browser)
-  const dadosDiscente = await Siga.getDados(browser)
-
-  await writeFile('dados.json', JSON.stringify({
-    discente: dadosDiscente,
-    notas: notasDetalhadas
-  }), () => { console.info('Saving...')})
-
-  await Siga.exit(page)
-
-  await browser.close()
-
-}
-
-main()
+app.listen(2222, () => console.log('Server running...'))

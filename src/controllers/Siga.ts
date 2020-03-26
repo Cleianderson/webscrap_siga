@@ -5,6 +5,7 @@ export async function login(login: string, pass: string, page: ppr.Page) {
   await page.type('#cpf', login)
   await page.type('#txtPassword', pass)
   await page.click('#btnEntrar')
+  await page.waitForSelector('#Conteudo')
 }
 
 export async function exit(page: ppr.Page) {
@@ -12,16 +13,18 @@ export async function exit(page: ppr.Page) {
 
   await page.waitFor(500)
   await page.click('#botao_sair')
-  console.info('Exiting...')
   await page.evaluate(() => window.SIGA.fecharDialogSair(true))
 }
 
 export async function extractNotas(browser: ppr.Browser) {
   const pg = await browser.newPage()
-  await pg.goto('https://www.siga.ufrpe.br/ufrpe/jsp/siga/consultas/HandlerPesquisarNotasDetalhadasPorPeriodoSIGA.jsp')
+  await pg.goto(
+    'https://www.siga.ufrpe.br/ufrpe/jsp/siga/consultas/HandlerPesquisarNotasDetalhadasPorPeriodoSIGA.jsp',
+    { waitUntil: 'networkidle0' }
+  )
 
   const mat = await pg.evaluate(() => {
-    const arrTr: NodeListOf<HTMLTableRowElement> = document.querySelectorAll(
+    const arrTr: SIGANode = document.querySelectorAll(
       'div > table > tbody > tr > td > table > tbody > tr'
     )
 
