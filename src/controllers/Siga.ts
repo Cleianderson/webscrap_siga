@@ -14,6 +14,7 @@ export async function exit(page: ppr.Page) {
   await page.waitFor(500)
   await page.click('#botao_sair')
   await page.evaluate(() => window.SIGA.fecharDialogSair(true))
+  await page.close()
 }
 
 export async function extractNotas(browser: ppr.Browser) {
