@@ -42,43 +42,50 @@ export async function extractNotas(pg: ppr.Page) {
   )
 
   const mat = await pg.evaluate(() => {
-    const arrTr: SIGANode = document.querySelectorAll(
-      'div > table > tbody > tr > td > table > tbody > tr',
-    )
+    const arrOfPer: SIGANode = document.querySelectorAll('div[id^="20"]')
 
-    const arrFiltered: object[] = []
-    for (let n = 0; n < arrTr.length; n++) {
-      if (Number(arrTr[n].cells[0].width) != 34 && arrTr[n].cells[0].bgColor == '#FAEBD7') {
-        /**
-         * Get [Faltas, VA1, VA2, VA3, Média, VAFN, MFIN, TEACHER] for each matter
-         */
-        let unit: Dict = {}
-        for (let n2 = 1; n2 < arrTr[n].cells.length; n2++) {
-          let content = arrTr[n + 1].cells[n2].innerText.match(/\w{1,}(\.\d{1,})?/)
-          unit[arrTr[n].cells[n2].innerText.match(/\w{1,}(\.\d{1,})?/)![0]] = content
-            ? content[0]
-            : '-'
+    const arrayOfPeriods: object[] = []
+    arrOfPer.forEach(div => {
+      const arrTr: SIGANode = div.querySelectorAll(
+        'div > table > tbody > tr > td > table > tbody > tr',
+      )
 
+      const arrFiltered: object[] = []
+      for (let n = 0; n < arrTr.length; n++) {
+
+        if (Number(arrTr[n].cells[0].width) != 34 && arrTr[n].cells[0].bgColor == '#FAEBD7') {
           /**
-           * Get the teacher of the current matter
+           * Get [Faltas, VA1, VA2, VA3, Média, VAFN, MFIN, TEACHER] for each matter
            */
-          let prof = ''
-          let mat = ''
-          for (let ctrl = n; ctrl >= 0; ctrl--) {
-            if (arrTr[ctrl].cells[0].innerText.toLowerCase().includes('docente')) {
-              prof = arrTr[ctrl].cells[1].innerText
-              mat = arrTr[ctrl - 1].querySelector('td > font > b > font')!.innerText
-              break
-            }
-          }
-          unit['prof'] = prof.trim()
-          unit['mat'] = mat.trim()
-        }
-        arrFiltered.push(unit)
-      }
-    }
+          let unit: Dict = {}
+          for (let n2 = 1; n2 < arrTr[n].cells.length; n2++) {
+            let content = arrTr[n + 1].cells[n2].innerText.match(/\w{1,}(\.\d{1,})?/)
+            unit[arrTr[n].cells[n2].innerText.match(/\w{1,}(\.\d{1,})?/)![0]] = content
+              ? content[0]
+              : '-'
 
-    return arrFiltered
+            /**
+             * Get the teacher of the current matter
+             */
+            let prof = ''
+            let mat = ''
+            for (let ctrl = n; ctrl >= 0; ctrl--) {
+              if (arrTr[ctrl].cells[0].innerText.toLowerCase().includes('docente')) {
+                prof = arrTr[ctrl].cells[1].innerText
+                mat = arrTr[ctrl - 1].querySelector('td > font > b > font')!.innerText
+                break
+              }
+            }
+            unit['prof'] = prof.trim()
+            unit['mat'] = mat.trim()
+          }
+          arrFiltered.push(unit)
+        }
+      }
+      arrayOfPeriods.push({name: div.id, subjects: arrFiltered})
+    })
+
+    return arrayOfPeriods
   })
 
   return mat
