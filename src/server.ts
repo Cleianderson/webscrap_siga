@@ -5,7 +5,10 @@ import Routes from './routes'
 
 const createServer = async (): Promise<express.Express> => {
   const app = express()
-  const universalBrowser = await ppr.launch({ executablePath: 'C:\\Program Files\\Chromium\\chrome.exe', headless: false })
+  const universalBrowser = await ppr.launch({
+    executablePath: 'C:\\Program Files\\Chromium\\chrome.exe',
+    //headless: false,
+  })
 
   app.set('universalBrowser', universalBrowser)
   app.use(Routes(app))
