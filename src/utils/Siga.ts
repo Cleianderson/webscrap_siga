@@ -45,14 +45,13 @@ export async function extractNotas(pg: ppr.Page) {
     const arrOfPer: SIGANode = document.querySelectorAll('div[id^="20"]')
 
     const arrayOfPeriods: object[] = []
-    arrOfPer.forEach(div => {
+    arrOfPer.forEach((div) => {
       const arrTr: SIGANode = div.querySelectorAll(
         'div > table > tbody > tr > td > table > tbody > tr',
       )
 
       const arrFiltered: object[] = []
       for (let n = 0; n < arrTr.length; n++) {
-
         if (Number(arrTr[n].cells[0].width) != 34 && arrTr[n].cells[0].bgColor == '#FAEBD7') {
           /**
            * Get [Faltas, VA1, VA2, VA3, Média, VAFN, MFIN, TEACHER] for each matter
@@ -116,4 +115,26 @@ export async function getDados(browser: ppr.Browser) {
 
   await pg.close()
   return finalData
+}
+
+export async function getHorary(pg: ppr.Page) {
+  await pg.goto(
+    'https://www.siga.ufrpe.br/ufrpe/jsp/siga/consultas/HandlerConsultaComprovanteMatriculaCoordSIGA.jsp',
+    {waitUntil: 'networkidle2'},
+  )
+
+  const horary = await pg.evaluate(() => {
+    const days: Dict = {A: 'mon', B: 'tue', C: 'wed', D: 'thu', E: 'fri', F: 'sat', G: 'sun'}
+    const allTrs: NodeListOf<HTMLTableDataCellElement> = document.querySelectorAll(
+      'table > tbody > tr > td.textoTabela',
+    )
+    let horaryByDays: Horary = {begin: window.horariosInicio, end: window.horariosFim}
+    allTrs.forEach((item) => {
+      if (horaryByDays[days[item.id.charAt(0)]] == undefined)
+        horaryByDays[days[item.id.charAt(0)]] = []
+      horaryByDays[days[item.id.charAt(0)]].push(item.innerText)
+    })
+    return horaryByDays
+  })
+  return horary
 }

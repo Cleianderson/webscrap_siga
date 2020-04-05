@@ -42,4 +42,20 @@ export default {
       return res.status(400)
     }
   },
+  async horary(req: express.Request, res:express.Response, app:express.Application){
+    const browser = app.get('universalBrowser')
+
+    try {
+      const horary = await Siga.login(
+        req.query.login,
+        req.query.pass,
+        browser,
+        async page => await Siga.getHorary(page),
+        true,
+      )
+      return res.status(200).json(horary)
+    } catch (error) {
+      return res.status(400)
+    }
+  }
 }
