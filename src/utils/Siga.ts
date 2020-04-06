@@ -1,5 +1,15 @@
 import ppr from 'puppeteer-core'
 
+/**
+ * 
+ * A function that make login in Siga and execute a function
+ * 
+ * @param login the login used to acess Siga
+ * @param pass the password used to acess Siga
+ * @param browser an instance of chromium
+ * @param fn a function that will be executed until the login has finished
+ * @param returnToHome return to initial home until logout
+ */
 export async function login(
   login: string,
   pass: string,
@@ -8,6 +18,7 @@ export async function login(
   returnToHome = false,
 ): Promise<string> {
   const page = await browser.newPage()
+  await browser.createIncognitoBrowserContext()
 
   await page.goto('https://www.siga.ufrpe.br/ufrpe/index.jsp')
 
@@ -15,7 +26,12 @@ export async function login(
   await page.type('#cpf', login)
   await page.type('#txtPassword', pass)
   await page.click('#btnEntrar')
-  await page.waitForSelector('#Conteudo')
+  try{
+    await page.waitForSelector('#Conteudo')
+  }catch(err){
+    const error = await page.evaluate(()=>document.querySelectorAll('#divMayus ~ span')[0].querySelector('ul > li')!.textContent)
+    return error as string
+  }
 
   const response = await fn(page, login, pass)
   await exit(page, returnToHome)
