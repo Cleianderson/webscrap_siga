@@ -1,9 +1,9 @@
 import ppr from 'puppeteer-core'
 
 /**
- * 
+ *
  * A function that make login in Siga and execute a function
- * 
+ *
  * @param login the login used to acess Siga
  * @param pass the password used to acess Siga
  * @param browser an instance of chromium
@@ -15,30 +15,40 @@ export async function login(
   pass: string,
   browser: ppr.Browser,
   fn: (pg: ppr.Page, login: string, pass: string) => Promise<any>,
-  returnToHome = false,
-): Promise<string> {
+): Promise<{status: number; message: string}> {
   const page = await browser.newPage()
   await browser.createIncognitoBrowserContext()
 
   await page.goto('https://www.siga.ufrpe.br/ufrpe/index.jsp')
 
   await page.waitForSelector('#cpf')
+  await page.evaluate(() => {
+    (document.getElementById('cpf')! as HTMLInputElement).value = '';
+    (document.getElementById('txtPassword')! as HTMLInputElement).value = '';
+  })
   await page.type('#cpf', login)
   await page.type('#txtPassword', pass)
   await page.click('#btnEntrar')
-  try{
-    await page.waitForSelector('#Conteudo')
-  }catch(err){
-    const error = await page.evaluate(()=>document.querySelectorAll('#divMayus ~ span')[0].querySelector('ul > li')!.textContent)
-    return error as string
-  }
+  await page.waitForNavigation()
+  const error = await page.evaluate(() => {
+    const errorSpan: NodeListOf<HTMLSpanElement> = document.querySelectorAll('#divMayus ~ span')
+    return errorSpan[0] ? errorSpan[0].querySelector('ul > li')!.textContent : null
+  })
 
+  if (error) {
+    await page.close()
+    return {status: 400, message: JSON.stringify({error:error.trim()})}
+  }
+  await page.waitForSelector('#Conteudo')
   const response = await fn(page, login, pass)
-  await exit(page, returnToHome)
-  return response
+  if (response) {
+    await exit(page)
+    return {status: 200, message: response}
+  }
+  return {status: 400, message: 'Unknow error'}
 }
 
-export async function exit(page: ppr.Page, returnToHome = false) {
+export async function exit(page: ppr.Page, returnToHome = true) {
   let window: WindowSiga
 
   if (returnToHome) {
@@ -103,7 +113,7 @@ export async function extractNotas(pg: ppr.Page) {
     return arrayOfPeriods
   })
 
-  return mat
+  return JSON.stringify(mat)
 }
 
 export async function getDados(browser: ppr.Browser) {
@@ -152,5 +162,5 @@ export async function getHorary(pg: ppr.Page) {
     })
     return horaryByDays
   })
-  return horary
+  return JSON.stringify(horary)
 }

@@ -1,5 +1,4 @@
 import express from 'express'
-import ppr from 'puppeteer-core'
 
 import * as Siga from '../utils/Siga'
 
@@ -7,55 +6,41 @@ export default {
   async login(req: express.Request, res: express.Response, app: express.Application) {
     const browser = app.get('universalBrowser')
 
-    try {
-      const login = await Siga.login(
-        req.query.login,
-        req.query.pass,
-        browser,
-        async page =>
-          await page.evaluate(() => {
-            const name = document.getElementById('lblNomePessoa')!.innerText
-            const func = document.getElementById('lblDescricaoTipoPerfilFuncional')!.innerText
-            const mode = document.getElementById('lblDescricaoModulo')!.innerText
-            const org = document.getElementById('lblNomeOrgao')!.innerText
-            return JSON.stringify({name, func, mode, org})
-          }),
-      )
-      return res.status(200).json(JSON.parse(login))
-    } catch (err) {
-      return res.status(400).json({error: 'Login failed'})
-    }
+    const login = await Siga.login(
+      req.query.login,
+      req.query.pass,
+      browser,
+      async (page) =>
+        await page.evaluate(() => {
+          const name = document.getElementById('lblNomePessoa')!.innerText
+          const func = document.getElementById('lblDescricaoTipoPerfilFuncional')!.innerText
+          const mode = document.getElementById('lblDescricaoModulo')!.innerText
+          const org = document.getElementById('lblNomeOrgao')!.innerText
+          return JSON.stringify({name, func, mode, org})
+        }),
+    )
+    return res.status(login.status).json(JSON.parse(login.message))
   },
   async notes(req: express.Request, res: express.Response, app: express.Application) {
     const browser = app.get('universalBrowser')
 
-    try {
       const notes = await Siga.login(
         req.query.login,
         req.query.pass,
         browser,
-        async page => await Siga.extractNotas(page),
-        true,
+        async (page) => await Siga.extractNotas(page),
       )
-      return res.status(200).json(notes)
-    } catch (error) {
-      return res.status(400)
-    }
+      return res.status(notes.status).json(JSON.parse(notes.message))
   },
-  async horary(req: express.Request, res:express.Response, app:express.Application){
+  async horary(req: express.Request, res: express.Response, app: express.Application) {
     const browser = app.get('universalBrowser')
 
-    try {
-      const horary = await Siga.login(
+    const horary = await Siga.login(
         req.query.login,
         req.query.pass,
         browser,
-        async page => await Siga.getHorary(page),
-        true,
+        async (page) => await Siga.getHorary(page),
       )
-      return res.status(200).json(horary)
-    } catch (error) {
-      return res.status(400)
-    }
-  }
+      return res.status(horary.status).json(JSON.parse(horary.message))
+    },
 }
