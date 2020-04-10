@@ -16,15 +16,15 @@ export async function login(
   browser: ppr.Browser,
   fn: (pg: ppr.Page, login: string, pass: string) => Promise<any>,
 ): Promise<{status: number; message: string}> {
-  const page = await browser.newPage()
-  await browser.createIncognitoBrowserContext()
+  const incognitoBrowser = await browser.createIncognitoBrowserContext()
+  const page = await incognitoBrowser.newPage()
 
   await page.goto('https://www.siga.ufrpe.br/ufrpe/index.jsp')
 
   await page.waitForSelector('#cpf')
   await page.evaluate(() => {
-    (document.getElementById('cpf')! as HTMLInputElement).value = '';
-    (document.getElementById('txtPassword')! as HTMLInputElement).value = '';
+    ;(document.getElementById('cpf')! as HTMLInputElement).value = ''
+    ;(document.getElementById('txtPassword')! as HTMLInputElement).value = ''
   })
   await page.type('#cpf', login)
   await page.type('#txtPassword', pass)
@@ -37,7 +37,7 @@ export async function login(
 
   if (error) {
     await page.close()
-    return {status: 400, message: JSON.stringify({error:error.trim()})}
+    return {status: 400, message: JSON.stringify({error: error.trim()})}
   }
   await page.waitForSelector('#Conteudo')
   const response = await fn(page, login, pass)
@@ -68,44 +68,96 @@ export async function extractNotas(pg: ppr.Page) {
   )
 
   const mat = await pg.evaluate(() => {
+    /**
+     * get all perios that begin with '20'
+     */
     const arrOfPer: SIGANode = document.querySelectorAll('div[id^="20"]')
 
     const arrayOfPeriods: object[] = []
     arrOfPer.forEach((div) => {
-      const arrTr: SIGANode = div.querySelectorAll(
+      /**
+       * get all trs that contains information
+       */
+      const arrTr: NodeListOf<HTMLTableRowElement> = div.querySelectorAll(
         'div > table > tbody > tr > td > table > tbody > tr',
       )
 
       const arrFiltered: object[] = []
       for (let n = 0; n < arrTr.length; n++) {
-        if (Number(arrTr[n].cells[0].width) != 34 && arrTr[n].cells[0].bgColor == '#FAEBD7') {
-          /**
-           * Get [Faltas, VA1, VA2, VA3, Média, VAFN, MFIN, TEACHER] for each matter
-           */
-          let unit: Dict = {}
-          for (let n2 = 1; n2 < arrTr[n].cells.length; n2++) {
-            let content = arrTr[n + 1].cells[n2].innerText.match(/\w{1,}(\.\d{1,})?/)
-            unit[arrTr[n].cells[n2].innerText.match(/\w{1,}(\.\d{1,})?/)![0]] = content
-              ? content[0]
-              : '-'
+        /**
+         * check if arrTr[n] is a title of matter
+         */
+        if (arrTr[n].querySelector('td > font > b > font')) {
+          const mat = (arrTr[n].querySelector(
+            'td > font > b > font',
+          )! as HTMLFontElement).innerText.trim()
 
-            /**
-             * Get the teacher of the current matter
-             */
-            let prof = ''
-            let mat = ''
-            for (let ctrl = n; ctrl >= 0; ctrl--) {
-              if (arrTr[ctrl].cells[0].innerText.toLowerCase().includes('docente')) {
-                prof = arrTr[ctrl].cells[1].innerText
-                mat = arrTr[ctrl - 1].querySelector('td > font > b > font')!.innerText
-                break
-              }
+          /**
+           * get the name of teacher
+           */
+          const prof = (arrTr[n + 1].querySelector(
+            'td > font.editPesquisa',
+          )! as HTMLFontElement).innerText.trim()
+
+          /**
+           * check if label 'Avaliação' is not a formula
+           */
+          const typeEvaluation = arrTr[n + 2].querySelector('td:last-child > font.edit')
+
+          let unit: Dict = {}
+          if (typeEvaluation) {
+            if (
+              (arrTr[n + 3].querySelector(
+                'td:last-child > font.edit',
+              )! as HTMLFontElement).innerText.toLowerCase() === 'faltas'
+            ) {
+              unit['Faltas'] = arrTr[n + 4].cells[1].innerText.trim()
             }
-            unit['prof'] = prof.trim()
-            unit['mat'] = mat.trim()
+          } else {
+            for (let n2 = 1; n2 < arrTr[n + 3].cells.length; n2++) {
+
+              let text = (arrTr[n + 3].cells[n2].querySelector(
+                'td > font.edit',
+              )! as HTMLFontElement).innerText.trim()
+              
+              let content = (arrTr[n + 4].cells[n2].querySelector(
+                'td > font.editPesquisa',
+              )! as HTMLFontElement).innerText.trim()
+              
+              unit[text] = content
+            }
           }
+          unit['prof'] = prof
+          unit['mat'] = mat
           arrFiltered.push(unit)
         }
+        // if (Number(arrTr[n].cells[0].width) != 34 && arrTr[n].cells[0].bgColor == '#FAEBD7') {
+        //   /**
+        //    * Get [Faltas, VA1, VA2, VA3, Média, VAFN, MFIN, TEACHER] for each matter
+        //    */
+        //   for (let n2 = 1; n2 < arrTr[n].cells.length; n2++) {
+        //     let content = arrTr[n + 1].cells[n2].innerText.match(/\w{1,}(\.\d{1,})?/)
+        //     unit[arrTr[n].cells[n2].innerText.match(/\w{1,}(\.\d{1,})?/)![0]] = content
+        //       ? content[0]
+        //       : '-'
+
+        //     /**
+        //      * Get the teacher of the current matter
+        //      */
+        //     let prof = ''
+        //     let mat = ''
+        //     for (let ctrl = n; ctrl >= 0; ctrl--) {
+        //       if (arrTr[ctrl].cells[0].innerText.toLowerCase().includes('docente')) {
+        //         prof = arrTr[ctrl].cells[1].innerText
+        //         mat = arrTr[ctrl - 1].querySelector('td > font > b > font')!.innerText
+        //         break
+        //       }
+        //     }
+        //     unit['prof'] = prof.trim()
+        //     unit['mat'] = mat.trim()
+        //   }
+        //   arrFiltered.push(unit)
+        // }
       }
       arrayOfPeriods.push({name: div.id, subjects: arrFiltered})
     })
@@ -150,15 +202,15 @@ export async function getHorary(pg: ppr.Page) {
   )
 
   const horary = await pg.evaluate(() => {
-    const days: Dict = {A: 'mon', B: 'tue', C: 'wed', D: 'thu', E: 'fri', F: 'sat', G: 'sun'}
+    const days: string[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
     const allTrs: NodeListOf<HTMLTableDataCellElement> = document.querySelectorAll(
       'table > tbody > tr > td.textoTabela',
     )
-    let horaryByDays: Horary = {begin: window.horariosInicio, end: window.horariosFim}
+    let horaryByDays: Horary = {begin: window.horariosInicio, end: window.horariosFim, days: [[]]}
     allTrs.forEach((item) => {
-      if (horaryByDays[days[item.id.charAt(0)]] == undefined)
-        horaryByDays[days[item.id.charAt(0)]] = []
-      horaryByDays[days[item.id.charAt(0)]].push(item.innerText)
+      if (horaryByDays.days[days.indexOf(item.id.charAt(0).toUpperCase())] == undefined)
+        horaryByDays.days[days.indexOf(item.id.charAt(0).toUpperCase())] = []
+      horaryByDays.days[days.indexOf(item.id.charAt(0).toUpperCase())].push(item.innerText)
     })
     return horaryByDays
   })

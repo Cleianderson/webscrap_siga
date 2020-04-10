@@ -7,7 +7,8 @@ const createServer = async (): Promise<express.Express> => {
   const app = express()
   const universalBrowser = await ppr.launch({
     executablePath: 'C:\\Program Files\\Chromium\\chrome.exe',
-    // headless: false,
+    defaultViewport: null,
+   // headless: false,
   })
 
   app.set('universalBrowser', universalBrowser)
