@@ -167,11 +167,16 @@ export async function getHorary(pg: ppr.Page) {
       end: (window as WindowSiga).horariosFim,
       days: [[]],
     }
+
+    const getIndexByLetter = (item: string) => days.indexOf(item.charAt(0).toUpperCase())
+
     allTrs.forEach((item) => {
-      if (horaryByDays.days[days.indexOf(item.id.charAt(0).toUpperCase())] == undefined)
-        horaryByDays.days[days.indexOf(item.id.charAt(0).toUpperCase())] = []
-      horaryByDays.days[days.indexOf(item.id.charAt(0).toUpperCase())].push(item.innerText)
+      if (horaryByDays.days[getIndexByLetter(item.id)] == undefined)
+        horaryByDays.days[getIndexByLetter(item.id)] = []
+
+      horaryByDays.days[getIndexByLetter(item.id)].push(item.innerText)
     })
+
     return horaryByDays
   })
   return JSON.stringify(horary)
