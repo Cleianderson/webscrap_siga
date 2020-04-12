@@ -1,14 +1,14 @@
 import express from 'express'
-import ppr from 'puppeteer-core'
+import ppr from 'puppeteer'
 
 import Routes from './routes'
 
 const createServer = async (): Promise<express.Express> => {
   const app = express()
   const universalBrowser = await ppr.launch({
-    executablePath: 'C:\\Program Files\\Chromium\\chrome.exe',
     defaultViewport: null,
-   // headless: false,
+    args:['--no-sandbox'],
+    // headless: false,
   })
 
   app.set('universalBrowser', universalBrowser)

@@ -1,4 +1,3 @@
-import ppr from 'puppeteer-core'
 import express from 'express'
 
 import SigaController from './controllers/SigaController'
