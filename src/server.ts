@@ -7,7 +7,10 @@ const createServer = async (): Promise<express.Express> => {
   const app = express()
   const universalBrowser = await ppr.launch({
     defaultViewport: null,
-    args:['--no-sandbox'],
+    args:[
+	'--no-sandbox',
+	'--disable-setuid-sandbox'
+    ],
     // headless: false,
   })
 
