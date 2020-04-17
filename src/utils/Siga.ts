@@ -61,7 +61,6 @@ export async function login(
 
   const response = await fn(page, login, pass)
   if (response) {
-    console.log('exiting')
     await exit(page)
     return {status: 200, message: response}
   }

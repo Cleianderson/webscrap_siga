@@ -20,7 +20,7 @@ const login = async (req: Request, res: Response, app: Application) => {
       return JSON.stringify({name, func, mode, org})
     })
 
-  const login = await Siga.login(req.query.login, req.query.pass, browser, funcParam)
+  const login = await Siga.login(req.body.login, req.body.pass, browser, funcParam)
   return res.status(login.status).json(JSON.parse(login.message))
 }
 
@@ -28,8 +28,8 @@ const notes = async (req: Request, res: Response, app: Application) => {
   const browser = app.get('universalBrowser')
 
   const notes = await Siga.login(
-    req.query.login,
-    req.query.pass,
+    req.body.login,
+    req.body.pass,
     browser,
     async (page) => await Siga.extractNotas(page),
   )
@@ -40,8 +40,8 @@ const horary = async (req: Request, res: Response, app: Application) => {
   const browser = app.get('universalBrowser')
 
   const horary = await Siga.login(
-    req.query.login,
-    req.query.pass,
+    req.body.login,
+    req.body.pass,
     browser,
     async (page) => await Siga.getHorary(page),
   )

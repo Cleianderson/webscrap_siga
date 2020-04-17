@@ -15,6 +15,7 @@ const createServer = async (): Promise<express.Express> => {
   })
 
   app.set('universalBrowser', universalBrowser)
+  app.use(express.json())
   app.use(Routes(app))
 
   return app
